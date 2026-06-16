@@ -116,12 +116,14 @@ export const getJsHeapSizeLimit: (automation: Automation) => Promise<number> = m
 export const getMemoryHandler = async (): Promise<MemoryHandler> => {
   if (os.platform() === 'linux') {
     if (await fs.pathExists('/sys/fs/cgroup/cgroup.controllers')) {
-      // cgroup v2 can use the default handler so just pass through
-    } else {
-      debug('using cgroup v1 memory handler')
+      debug('using cgroup v2 memory handler')
 
-      return (await import('./cgroup-v1')).default
+      return (await import('./cgroup-v2')).default
     }
+
+    debug('using cgroup v1 memory handler')
+
+    return (await import('./cgroup-v1')).default
   }
 
   debug('using default memory handler')

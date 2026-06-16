@@ -63,13 +63,71 @@ describe('lib/browsers/memory', () => {
       expect(await memory.getMemoryHandler()).to.eq(cgroupV1Handler)
     })
 
-    it('returns "default" for linux cgroup v2', async () => {
-      const defaultHandler = require('../../../../lib/browsers/memory/default').default
+    it('returns "cgroup-v2" for linux cgroup v2', async () => {
+      const cgroupV2Handler = require('../../../../lib/browsers/memory/cgroup-v2').default
 
       sinon.stub(os, 'platform').returns('linux')
       sinon.stub(fs, 'pathExists').withArgs('/sys/fs/cgroup/cgroup.controllers').resolves(true)
 
-      expect(await memory.getMemoryHandler()).to.eq(defaultHandler)
+      expect(await memory.getMemoryHandler()).to.eq(cgroupV2Handler)
+    })
+  })
+
+  context('cgroup-v2 handler', () => {
+    let cgroupV2: typeof import('../../../../lib/browsers/memory/cgroup-v2').default
+
+    beforeEach(() => {
+      cgroupV2 = require('../../../../lib/browsers/memory/cgroup-v2').default
+    })
+
+    context('#getTotalMemoryLimit', () => {
+      it('reads the memory limit in bytes from memory.max', async () => {
+        sinon.stub(fs, 'readFile').withArgs('/sys/fs/cgroup/memory.max', 'utf8').resolves('2147483648\n')
+
+        expect(await cgroupV2.getTotalMemoryLimit()).to.eq(2147483648)
+      })
+
+      it('falls back to the total system memory when unconstrained', async () => {
+        sinon.stub(fs, 'readFile').withArgs('/sys/fs/cgroup/memory.max', 'utf8').resolves('max\n')
+        sinon.stub(os, 'totalmem').returns(8589934592)
+
+        expect(await cgroupV2.getTotalMemoryLimit()).to.eq(8589934592)
+      })
+    })
+
+    context('#getAvailableMemory', () => {
+      it('subtracts the working set (usage minus inactive file cache) from the total limit', async () => {
+        const readFile = sinon.stub(fs, 'readFile')
+
+        readFile.withArgs('/sys/fs/cgroup/memory.current', 'utf8').resolves('1000\n')
+        readFile.withArgs('/sys/fs/cgroup/memory.stat', 'utf8').resolves('anon 400\ninactive_file 300\n')
+
+        const log: { [key: string]: any } = {}
+
+        // working set = 1000 - 300 = 700, available = 2000 - 700 = 1300
+        expect(await cgroupV2.getAvailableMemory(2000, log)).to.eq(1300)
+        expect(log.totalMemoryWorkingSetUsed).to.eq(700)
+      })
+    })
+  })
+
+  context('cgroup-util', () => {
+    const cgroupUtil = require('../../../../lib/browsers/memory/cgroup-util')
+
+    context('#parseMemoryStat', () => {
+      it('parses `key value` lines into a numeric lookup', () => {
+        expect(cgroupUtil.parseMemoryStat('anon 400\ninactive_file 300\n')).to.deep.eq({ anon: 400, inactive_file: 300 })
+      })
+    })
+
+    context('#availableFromWorkingSet', () => {
+      it('returns the limit minus the working set and records it on the log', () => {
+        const log: { [key: string]: any } = {}
+
+        // working set = 1000 - 300 = 700, available = 2000 - 700 = 1300
+        expect(cgroupUtil.availableFromWorkingSet(2000, 1000, 300, log)).to.eq(1300)
+        expect(log.totalMemoryWorkingSetUsed).to.eq(700)
+      })
     })
   })
 

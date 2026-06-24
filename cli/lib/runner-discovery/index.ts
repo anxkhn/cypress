@@ -55,6 +55,13 @@ export interface RunnerSelection {
   candidateCount: number
 }
 
+// Like RunnerSelection, but the chosen runner may have no browser attached yet.
+export interface LiveRunnerSelection {
+  runner: LiveRunnerState
+  reason: RunnerSelectionReason
+  candidateCount: number
+}
+
 export interface ResolveRunnerOptions {
   instance?: number
   cwd: string
@@ -89,7 +96,9 @@ const selectRunner = (live: LiveRunnerState[], options: ResolveRunnerOptions): {
   return { runner: lowestPid(live), reason: 'arbitrary' }
 }
 
-export const resolveRunner = async (options: ResolveRunnerOptions): Promise<RunnerSelection> => {
+// Resolves a live runner without requiring a browser; `status` reports
+// instances that have no browser attached yet.
+export const resolveLiveRunner = async (options: ResolveRunnerOptions): Promise<LiveRunnerSelection> => {
   const { instance, probeTimeoutMs } = options
   const records = await readRunnerRecords()
 
@@ -113,6 +122,14 @@ export const resolveRunner = async (options: ResolveRunnerOptions): Promise<Runn
 
   const { runner, reason } = selectRunner(live, options)
 
+  return { runner, reason, candidateCount: live.length }
+}
+
+// Adds the browser-readiness requirement to resolveLiveRunner: the runner it
+// returns is guaranteed to have a browser attached.
+export const resolveRunner = async (options: ResolveRunnerOptions): Promise<RunnerSelection> => {
+  const { runner, reason, candidateCount } = await resolveLiveRunner(options)
+
   if (!runner.cdpBrowserWsUrl) {
     throw new RunnerDiscoveryError(
       'NO_BROWSER_ATTACHED',
@@ -120,5 +137,5 @@ export const resolveRunner = async (options: ResolveRunnerOptions): Promise<Runn
     )
   }
 
-  return { runner: runner as ReadyRunnerState, reason, candidateCount: live.length }
+  return { runner: runner as ReadyRunnerState, reason, candidateCount }
 }

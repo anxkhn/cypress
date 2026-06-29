@@ -52,27 +52,16 @@ export const listLiveRunners = async (options: ListRunnerOptions = {}): Promise<
   return probeMatches(matches, options.probeTimeoutMs)
 }
 
-/**
- * How {@link resolveRunner} settled on its target:
- * - `explicit`  — an explicit `--instance` filter pinned the choice.
- * - `only`      — no filter, and exactly one runner was live.
- * - `cwd-match` — several were live; the one rooted at the cwd was chosen.
- * - `arbitrary` — several were live, none rooted at the cwd; lowest pid won.
- */
 export type RunnerSelectionReason = 'explicit' | 'only' | 'cwd-match' | 'arbitrary'
 
 export interface RunnerSelection {
-  /** The chosen runner, guaranteed to have a browser attached. */
   runner: ReadyRunnerState
   reason: RunnerSelectionReason
-  /** Count of verified-live runners that matched before disambiguation (>= 1). */
   candidateCount: number
 }
 
 export interface ResolveRunnerOptions {
-  /** Explicit pid filter; when omitted, every matching instance is a candidate. */
   instance?: number
-  /** Working directory, used only as a tiebreak when several runners are live. */
   cwd: string
   probeTimeoutMs?: number
 }
@@ -88,7 +77,6 @@ const describeFilter = (instance: number | undefined): string => {
 }
 
 const lowestPid = (runners: LiveRunnerState[]): LiveRunnerState => {
-  // Directory read order is not guaranteed, so sort for a deterministic pick.
   return [...runners].sort((a, b) => a.pid - b.pid)[0]
 }
 
@@ -110,16 +98,6 @@ const selectRunner = (live: LiveRunnerState[], options: ResolveRunnerOptions): {
   return { runner: lowestPid(live), reason: 'arbitrary' }
 }
 
-/**
- * Resolve the single Cypress runner a tap command should target, with its live
- * browser CDP state. With no `--instance`, the cwd is only a tiebreak: a lone
- * running Cypress is used wherever it lives, and several are disambiguated by
- * the cwd then by lowest pid (see {@link RunnerSelectionReason}).
- *
- * @throws {RunnerDiscoveryError} `NO_DISCOVERY_FILE` when no record matches the filters
- * @throws {RunnerDiscoveryError} `STALE_DISCOVERY_FILE` when records match but none verify as alive
- * @throws {RunnerDiscoveryError} `NO_BROWSER_ATTACHED` when the chosen runner is live but has no browser
- */
 export const resolveRunner = async (options: ResolveRunnerOptions): Promise<RunnerSelection> => {
   const { instance, probeTimeoutMs } = options
   const records = await readRunnerRecords()

@@ -13,7 +13,7 @@ export const TapSessionRegex = {
   sessionGone: /Inspected target navigated or closed|Session with given id not found/i,
 } as const
 
-const throwTapError = (details: { description: string, solution: string }, message: string, cause?: unknown): never => {
+export const throwTapError = (details: { description: string, solution: string }, message: string, cause?: unknown): never => {
   const err: any = new Error(message, cause === undefined ? undefined : { cause })
 
   err.details = details

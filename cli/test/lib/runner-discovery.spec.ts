@@ -252,10 +252,10 @@ describe('lib/runner-discovery', () => {
     })
 
     it('throws NO_DISCOVERY_FILE when no record matches the filters', async () => {
-      mockfs({ [INSTANCES_DIR]: { '111.json': makeRecord({ pid: 111, projectRoot: '/other/project' }) } })
+      mockfs({ [INSTANCES_DIR]: { '111.json': makeRecord({ pid: 111 }) } })
       stubKill({ alive: [111] })
 
-      await expect(resolveRunner({ project: PROJECT, cwd: PROJECT })).rejects.toMatchObject({ code: 'NO_DISCOVERY_FILE' })
+      await expect(resolveRunner({ instance: 999, cwd: PROJECT })).rejects.toMatchObject({ code: 'NO_DISCOVERY_FILE' })
     })
 
     it('throws STALE_DISCOVERY_FILE when a match exists but its process is dead', async () => {
@@ -286,7 +286,7 @@ describe('lib/runner-discovery', () => {
       await expect(resolveRunner({ cwd: PROJECT })).rejects.toMatchObject({ code: 'NO_BROWSER_ATTACHED' })
     })
 
-    it('skips a stale record and resolves the live one matching the same project', async () => {
+    it('skips a stale record and resolves the live one', async () => {
       const closedPort = await getClosedPort()
       const livePort = await startReadyRunner('live-instance')
 
@@ -299,7 +299,7 @@ describe('lib/runner-discovery', () => {
 
       stubKill({ alive: [111, 222] })
 
-      const selection = await resolveRunner({ project: PROJECT, cwd: PROJECT })
+      const selection = await resolveRunner({ cwd: PROJECT })
 
       expect(selection.runner.pid).toBe(222)
       // Only the verified-live record counts as a candidate.
@@ -413,21 +413,6 @@ describe('lib/runner-discovery', () => {
       stubKill({ alive: [111, 333] })
 
       expect((await listLiveRunners()).map((runner) => runner.pid)).toEqual([111])
-    })
-
-    it('filters by project root', async () => {
-      const port = await startFakeRunner()
-
-      mockfs({
-        [INSTANCES_DIR]: {
-          '111.json': makeRecord({ pid: 111, projectRoot: '/projects/app', serverPort: port }),
-          '222.json': makeRecord({ pid: 222, projectRoot: '/projects/other', serverPort: port }),
-        },
-      })
-
-      stubKill({ alive: [111, 222] })
-
-      expect((await listLiveRunners({ projectRoot: '/projects/app' })).map((runner) => runner.pid)).toEqual([111])
     })
 
     it('filters by pid', async () => {

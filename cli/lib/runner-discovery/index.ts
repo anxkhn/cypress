@@ -14,8 +14,6 @@ export { isPidAlive, verifyRunnerRecord } from './liveness'
 export { getRunnerDiscoveryDir, pruneDeadDiscoveryRecords, readRunnerRecords } from './store'
 
 export interface ListRunnerOptions {
-  /** Optional project-root filter; omitted lists runners across all projects. */
-  projectRoot?: string
   /** Optional pid filter; omitted lists every matching instance. */
   instance?: number
   probeTimeoutMs?: number
@@ -25,11 +23,10 @@ const matchesProject = (record: RunnerDiscoveryRecord, projectRoot: string): boo
   return path.resolve(record.projectRoot) === path.resolve(projectRoot)
 }
 
-// An undefined facet does not constrain, so an absent `--project` (every
-// project) and an absent `--instance` (every pid) narrow records the same way.
-const matchesFilters = (record: RunnerDiscoveryRecord, projectRoot: string | undefined, instance: number | undefined): boolean => {
-  return (projectRoot === undefined || matchesProject(record, projectRoot))
-    && (instance === undefined || record.pid === instance)
+// An undefined instance does not constrain, so an absent `--instance` lists
+// every pid.
+const matchesInstance = (record: RunnerDiscoveryRecord, instance: number | undefined): boolean => {
+  return instance === undefined || record.pid === instance
 }
 
 // A dead pid is skipped without a probe (it proves the writer is gone); the
@@ -44,20 +41,20 @@ const probeMatches = async (matches: RunnerDiscoveryRecord[], probeTimeoutMs?: n
 
 /**
  * Enumerate every verified-live Cypress runner, optionally narrowed to a
- * project root and/or a specific pid. "No runners" is a valid, empty list,
- * never an error — this backs the `instances` command.
+ * specific pid. "No runners" is a valid, empty list, never an error — this
+ * backs the `instances` command.
  */
 export const listLiveRunners = async (options: ListRunnerOptions = {}): Promise<LiveRunnerState[]> => {
   const records = await readRunnerRecords()
 
-  const matches = records.filter((record) => matchesFilters(record, options.projectRoot, options.instance))
+  const matches = records.filter((record) => matchesInstance(record, options.instance))
 
   return probeMatches(matches, options.probeTimeoutMs)
 }
 
 /**
  * How {@link resolveRunner} settled on its target:
- * - `explicit`  — an explicit `--instance`/`--project` filter pinned the choice.
+ * - `explicit`  — an explicit `--instance` filter pinned the choice.
  * - `only`      — no filter, and exactly one runner was live.
  * - `cwd-match` — several were live; the one rooted at the cwd was chosen.
  * - `arbitrary` — several were live, none rooted at the cwd; lowest pid won.
@@ -73,8 +70,6 @@ export interface RunnerSelection {
 }
 
 export interface ResolveRunnerOptions {
-  /** Explicit project-root filter; when omitted, every project is a candidate. */
-  project?: string
   /** Explicit pid filter; when omitted, every matching instance is a candidate. */
   instance?: number
   /** Working directory, used only as a tiebreak when several runners are live. */
@@ -83,14 +78,10 @@ export interface ResolveRunnerOptions {
 }
 
 // Phrase the filter that came up empty so the discovery errors name what the
-// user actually asked for (a pid, a project, or nothing in particular).
-const describeFilter = (project: string | undefined, instance: number | undefined): string => {
+// user actually asked for (a pid, or nothing in particular).
+const describeFilter = (instance: number | undefined): string => {
   if (instance !== undefined) {
     return ` with pid ${instance}`
-  }
-
-  if (project !== undefined) {
-    return ` for ${project}`
   }
 
   return ''
@@ -105,7 +96,7 @@ const lowestPid = (runners: LiveRunnerState[]): LiveRunnerState => {
 // whatever is chosen.
 const selectRunner = (live: LiveRunnerState[], options: ResolveRunnerOptions): { runner: LiveRunnerState, reason: RunnerSelectionReason } => {
   if (live.length === 1) {
-    const filtered = options.project !== undefined || options.instance !== undefined
+    const filtered = options.instance !== undefined
 
     return { runner: live[0], reason: filtered ? 'explicit' : 'only' }
   }
@@ -121,24 +112,24 @@ const selectRunner = (live: LiveRunnerState[], options: ResolveRunnerOptions): {
 
 /**
  * Resolve the single Cypress runner a tap command should target, with its live
- * browser CDP state. With no `--instance`/`--project`, the cwd is only a
- * tiebreak: a lone running Cypress is used wherever it lives, and several are
- * disambiguated by the cwd then by lowest pid (see {@link RunnerSelectionReason}).
+ * browser CDP state. With no `--instance`, the cwd is only a tiebreak: a lone
+ * running Cypress is used wherever it lives, and several are disambiguated by
+ * the cwd then by lowest pid (see {@link RunnerSelectionReason}).
  *
  * @throws {RunnerDiscoveryError} `NO_DISCOVERY_FILE` when no record matches the filters
  * @throws {RunnerDiscoveryError} `STALE_DISCOVERY_FILE` when records match but none verify as alive
  * @throws {RunnerDiscoveryError} `NO_BROWSER_ATTACHED` when the chosen runner is live but has no browser
  */
 export const resolveRunner = async (options: ResolveRunnerOptions): Promise<RunnerSelection> => {
-  const { project, instance, probeTimeoutMs } = options
+  const { instance, probeTimeoutMs } = options
   const records = await readRunnerRecords()
 
-  const matches = records.filter((record) => matchesFilters(record, project, instance))
+  const matches = records.filter((record) => matchesInstance(record, instance))
 
   if (matches.length === 0) {
     throw new RunnerDiscoveryError(
       'NO_DISCOVERY_FILE',
-      `No Cypress instance found${describeFilter(project, instance)}. This command requires Cypress running in open mode. Start Cypress in open mode, open a browser, and try again.`,
+      `No Cypress instance found${describeFilter(instance)}. This command requires Cypress running in open mode. Start Cypress in open mode, open a browser, and try again.`,
     )
   }
 
@@ -147,7 +138,7 @@ export const resolveRunner = async (options: ResolveRunnerOptions): Promise<Runn
   if (live.length === 0) {
     throw new RunnerDiscoveryError(
       'STALE_DISCOVERY_FILE',
-      `Cypress was previously running${describeFilter(project, instance)}, but is no longer responding. Cypress likely exited uncleanly; start Cypress in open mode, open a browser, and try again.`,
+      `Cypress was previously running${describeFilter(instance)}, but is no longer responding. Cypress likely exited uncleanly; start Cypress in open mode, open a browser, and try again.`,
     )
   }
 

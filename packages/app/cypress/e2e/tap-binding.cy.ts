@@ -24,8 +24,7 @@ describe('tap binding', () => {
 
       expect(unknown).to.deep.include({ ok: false, code: 'UNKNOWN_COMMAND' })
 
-      // No spec has run yet, so the runner window has no Cypress instance to
-      // read — a domain failure surfaced as ok: false, not a stdout result.
+      // No spec has run yet, so there is no run to read — a domain failure.
       const testsBeforeRun = await binding.exec('tests')
 
       expect(testsBeforeRun).to.deep.include({ ok: false, code: 'NO_RUN' })
@@ -77,7 +76,6 @@ describe('tap binding', () => {
     cy.waitForSpecToFinish({ passCount: 1 })
     cy.contains('Dom Content').should('be.visible')
 
-    // With a run finished, the tests command reads the runner's tests state.
     cy.window().then(async (win) => {
       const outcome = await getBinding(win).exec('tests')
 
@@ -94,8 +92,6 @@ describe('tap binding', () => {
         expect(test.retries).to.eq(0)
       }
 
-      // The tests command with an id details that one test: full title path,
-      // per-phase timings, and (here, a passing test) no error.
       const detailOutcome = await getBinding(win).exec('tests', { test: tests[0].id as string })
 
       expect(detailOutcome.ok).to.eq(true)
@@ -108,7 +104,6 @@ describe('tap binding', () => {
       expect(detail.timings).to.be.an('object')
       expect(detail.error).to.be.undefined
 
-      // An unknown test id details nothing — a domain failure.
       const missingDetail = await getBinding(win).exec('tests', { test: 'not-a-test' })
 
       expect(missingDetail).to.deep.include({ ok: false, code: 'TEST_NOT_FOUND' })

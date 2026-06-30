@@ -64,7 +64,6 @@ describe('tap binding', () => {
       })
     })
 
-    // The href change navigates from the specs page to the runner and runs the spec.
     cy.location('hash')
     .should('contain', '/specs/runner?file=cypress/e2e/dom-content.spec.js')
     .and('match', /tapRun=\d+/)
@@ -72,8 +71,7 @@ describe('tap binding', () => {
     cy.waitForSpecToFinish({ passCount: 1 })
     cy.contains('Dom Content').should('be.visible')
 
-    // Rerunning the same spec advances the tapRun nonce, so the query change
-    // kicks off a fresh run even though the active spec is unchanged.
+    // Rerunning advances the nonce, so the query changes even though the spec is unchanged.
     cy.location('hash').then((hashBefore) => {
       cy.window().then(async (win) => {
         const outcome = await getBinding(win).exec('run', { spec: 'cypress/e2e/dom-content.spec.js' })
@@ -93,7 +91,7 @@ describe('tap binding', () => {
         expect((outcome as { message: string }).message).to.contain('cypress/e2e/does-not-exist.cy.js')
       })
 
-      // A domain failure resolves as an ok: false value and never navigates.
+      // A domain failure never navigates.
       cy.location('hash').should('eq', hashBefore)
     })
   })

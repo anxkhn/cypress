@@ -31,7 +31,7 @@ export class TapManager implements TapBindingContract {
       cypressVersion: this.cypressVersion,
       commands: Object.entries(tapCommands).map(([name, definition]) => {
         // Widen past the `satisfies` literal type so the optional `options` is readable.
-        const { description, params, options } = definition as TapCommandDefinition
+        const { description, params, options, hidden } = definition as TapCommandDefinition
 
         // Snapshot the arrays and their elements so a caller mutating the
         // returned schema can't reach back into the in-process registry.
@@ -40,6 +40,7 @@ export class TapManager implements TapBindingContract {
           description,
           params: params.map((param) => ({ ...param })),
           options: (options ?? []).map((option) => ({ ...option })),
+          ...(hidden ? { hidden: true } : {}),
         }
       }),
     }

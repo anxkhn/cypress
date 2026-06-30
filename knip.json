@@ -775,6 +775,14 @@
     "cli/lib/runner-discovery/record.ts": [
       "types"
     ],
+    "cli/lib/tap/contract.ts": [
+      "exports",
+      "types"
+    ],
+    "cli/lib/tap/tap-session.ts": [
+      "exports",
+      "types"
+    ],
     "packages/server/lib/runner-discovery.ts": [
       "types"
     ],

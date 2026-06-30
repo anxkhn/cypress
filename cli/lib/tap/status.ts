@@ -53,7 +53,7 @@ export const reportStatus = async (options: TapCliOptions, wantsHelp: boolean): 
   try {
     selection = await resolveLiveRunner({ instance: options.instance, cwd: process.cwd() })
   } catch (err) {
-    // No live instance is itself a status a poller waits on, not a failure.
+    // No live instance is a status a poller waits on, not a failure.
     if (err instanceof RunnerDiscoveryError) {
       renderResult({ status: 'not connected' } satisfies TapStatus)
 
@@ -86,7 +86,7 @@ export const reportStatus = async (options: TapCliOptions, wantsHelp: boolean): 
 
       if (!outcome.ok) {
         // run-state has no domain failures, so a non-ok envelope means the
-        // running Cypress lacks the command — a binding mismatch, not a stage.
+        // running Cypress lacks the command — a binding mismatch.
         return throwTapError(errors.tapInvalidExecResult, `${outcome.code}: ${outcome.message}`)
       }
 
@@ -97,8 +97,8 @@ export const reportStatus = async (options: TapCliOptions, wantsHelp: boolean): 
 
     return 0
   } catch (err: any) {
-    // A browser is attached but the runner is unreachable (still loading, tab
-    // closed, CDP gone) — a transport fault, surfaced like other commands.
+    // Browser attached but runner unreachable (loading, tab closed, CDP gone) —
+    // a transport fault, surfaced like other commands.
     if (err.known && err.details) {
       renderKnownFailure(err)
 

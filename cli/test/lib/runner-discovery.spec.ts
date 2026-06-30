@@ -380,7 +380,6 @@ describe('lib/runner-discovery', () => {
 
       expect(selection.runner.pid).toBe(111)
       expect(selection.reason).toBe('only')
-      // The browser-optional resolver returns the live runner as-is — no browser.
       expect(selection.runner.cdpBrowserWsUrl).toBeNull()
     })
 

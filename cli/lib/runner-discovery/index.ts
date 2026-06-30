@@ -96,8 +96,7 @@ const selectRunner = (live: LiveRunnerState[], options: ResolveRunnerOptions): {
   return { runner: lowestPid(live), reason: 'arbitrary' }
 }
 
-// Resolves a live runner without requiring a browser; `status` reports
-// instances that have no browser attached yet.
+// Resolves a live runner without requiring a browser, for `status`.
 export const resolveLiveRunner = async (options: ResolveRunnerOptions): Promise<LiveRunnerSelection> => {
   const { instance, probeTimeoutMs } = options
   const records = await readRunnerRecords()
@@ -125,8 +124,7 @@ export const resolveLiveRunner = async (options: ResolveRunnerOptions): Promise<
   return { runner, reason, candidateCount: live.length }
 }
 
-// Adds the browser-readiness requirement to resolveLiveRunner: the runner it
-// returns is guaranteed to have a browser attached.
+// resolveLiveRunner plus the browser-attached requirement.
 export const resolveRunner = async (options: ResolveRunnerOptions): Promise<RunnerSelection> => {
   const { runner, reason, candidateCount } = await resolveLiveRunner(options)
 

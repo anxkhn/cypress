@@ -339,6 +339,7 @@ describe('lib/exec/tap', () => {
       projectRoot: '/projects/app',
       serverPort: 49200,
       instanceId: 'inst-1',
+      testingType: 'e2e',
       cdpBrowserWsUrl: 'ws://127.0.0.1:9222/devtools/browser/abc',
       ...overrides,
     })
@@ -375,6 +376,7 @@ describe('lib/exec/tap', () => {
         status: 'browser not selected',
         pid: 111,
         projectRoot: '/projects/app',
+        testingType: 'e2e',
         browserAttached: false,
       })
 
@@ -399,6 +401,7 @@ describe('lib/exec/tap', () => {
         status: 'spec not selected',
         pid: 4242,
         projectRoot: '/projects/app',
+        testingType: 'e2e',
         browserAttached: true,
         totalSpecs: 3,
       })
@@ -422,6 +425,7 @@ describe('lib/exec/tap', () => {
         status: 'running',
         pid: 4242,
         projectRoot: '/projects/app',
+        testingType: 'e2e',
         browserAttached: true,
         totalSpecs: 3,
         spec: 'cypress/e2e/login.cy.ts',
@@ -439,20 +443,20 @@ describe('lib/exec/tap', () => {
       expect(call).toHaveBeenCalledWith('exec', ['run-state', {}, {}])
     })
 
-    it('forwards --project and --instance plus the cwd to discovery', async () => {
+    it('forwards --instance plus the cwd to discovery', async () => {
       mockLiveResolved(liveRunner({ cdpBrowserWsUrl: null }))
 
-      await tap.start(['status'], { project: 'some/relative/dir', instance: 1234 })
+      await tap.start(['status'], { instance: 1234 })
 
-      expect(resolveLiveRunner).toHaveBeenCalledWith({ project: 'some/relative/dir', instance: 1234, cwd: process.cwd() })
+      expect(resolveLiveRunner).toHaveBeenCalledWith({ instance: 1234, cwd: process.cwd() })
     })
 
     it('exits 1 and renders the failure when the runner is unreachable despite a browser', async () => {
       mockLiveResolved(liveRunner())
-      vi.mocked(withTapSession).mockRejectedValue(new TapTransportError('BINDING_NOT_FOUND', 'the runner may still be loading'))
+      vi.mocked(withTapSession).mockRejectedValue(tapError(errors.tapBindingNotFound, 'the runner may still be loading'))
 
       expect(await tap.start(['status'], {})).toBe(1)
-      expect(logger.print()).toContain('the runner may still be loading')
+      expect(logger.print()).toContain(errors.tapBindingNotFound.description)
     })
 
     it('exits 1 when the running Cypress lacks the run-state command', async () => {

@@ -373,7 +373,7 @@ describe('lib/runner-discovery', () => {
     it('resolves a live runner that has no browser attached, instead of throwing', async () => {
       const port = await startFakeRunner({ respondWith: { instanceId: INSTANCE_ID, cdpBrowserWsUrl: null } })
 
-      mockfs({ [RUNNERS_DIR]: { '111.json': makeRecord({ pid: 111, serverPort: port }) } })
+      mockfs({ [INSTANCES_DIR]: { '111.json': makeRecord({ pid: 111, serverPort: port }) } })
       stubKill({ alive: [111] })
 
       const selection = await resolveLiveRunner({ cwd: PROJECT })
@@ -387,7 +387,7 @@ describe('lib/runner-discovery', () => {
     it('carries the live CDP endpoint when a browser is attached', async () => {
       const port = await startFakeRunner({ instanceId: INSTANCE_ID, respondWith: { instanceId: INSTANCE_ID, cdpBrowserWsUrl: CDP_WS_URL } })
 
-      mockfs({ [RUNNERS_DIR]: { '111.json': makeRecord({ pid: 111, serverPort: port }) } })
+      mockfs({ [INSTANCES_DIR]: { '111.json': makeRecord({ pid: 111, serverPort: port }) } })
       stubKill({ alive: [111] })
 
       const selection = await resolveLiveRunner({ cwd: PROJECT })
@@ -396,14 +396,14 @@ describe('lib/runner-discovery', () => {
     })
 
     it('throws NO_DISCOVERY_FILE when no record matches the filters', async () => {
-      mockfs({ [RUNNERS_DIR]: { '111.json': makeRecord({ pid: 111, projectRoot: '/other/project' }) } })
+      mockfs({ [INSTANCES_DIR]: { '111.json': makeRecord({ pid: 111 }) } })
       stubKill({ alive: [111] })
 
-      await expect(resolveLiveRunner({ project: PROJECT, cwd: PROJECT })).rejects.toMatchObject({ code: 'NO_DISCOVERY_FILE' })
+      await expect(resolveLiveRunner({ instance: 999, cwd: PROJECT })).rejects.toMatchObject({ code: 'NO_DISCOVERY_FILE' })
     })
 
     it('throws STALE_DISCOVERY_FILE when a match exists but its process is dead', async () => {
-      mockfs({ [RUNNERS_DIR]: { '111.json': makeRecord({ pid: 111 }) } })
+      mockfs({ [INSTANCES_DIR]: { '111.json': makeRecord({ pid: 111 }) } })
       stubKill({ alive: [] })
 
       await expect(resolveLiveRunner({ cwd: PROJECT })).rejects.toMatchObject({ code: 'STALE_DISCOVERY_FILE' })

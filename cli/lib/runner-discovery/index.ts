@@ -39,11 +39,6 @@ const probeMatches = async (matches: RunnerDiscoveryRecord[], probeTimeoutMs?: n
   return probed.filter((runner): runner is LiveRunnerState => runner !== null)
 }
 
-/**
- * Enumerate every verified-live Cypress runner, optionally narrowed to a
- * specific pid. "No runners" is a valid, empty list, never an error — this
- * backs the `instances` command.
- */
 export const listLiveRunners = async (options: ListRunnerOptions = {}): Promise<LiveRunnerState[]> => {
   const records = await readRunnerRecords()
 
@@ -66,8 +61,6 @@ export interface ResolveRunnerOptions {
   probeTimeoutMs?: number
 }
 
-// Phrase the filter that came up empty so the discovery errors name what the
-// user actually asked for (a pid, or nothing in particular).
 const describeFilter = (instance: number | undefined): string => {
   if (instance !== undefined) {
     return ` with pid ${instance}`
@@ -80,8 +73,6 @@ const lowestPid = (runners: LiveRunnerState[]): LiveRunnerState => {
   return [...runners].sort((a, b) => a.pid - b.pid)[0]
 }
 
-// Browser readiness is not a selection criterion — the caller requires it of
-// whatever is chosen.
 const selectRunner = (live: LiveRunnerState[], options: ResolveRunnerOptions): { runner: LiveRunnerState, reason: RunnerSelectionReason } => {
   if (live.length === 1) {
     const filtered = options.instance !== undefined

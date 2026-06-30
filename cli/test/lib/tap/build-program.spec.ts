@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import commander from 'commander'
 
 import { buildTapProgram } from '../../../lib/tap/build-program'
-import type { TapSchema } from '../../../lib/tap/contract'
+import type { TapSchema } from '@packages/runner-discovery'
 
 const schema: TapSchema = {
   protocolVersion: 1,

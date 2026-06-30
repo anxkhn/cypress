@@ -4,7 +4,7 @@ import logger from '../../../lib/logger'
 import { RunnerDiscoveryError, listLiveRunners, resolveRunner } from '../../../lib/runner-discovery'
 import type { LiveRunnerState, ReadyRunnerState, RunnerSelection } from '../../../lib/runner-discovery'
 import { withTapSession } from '../../../lib/tap/tap-session'
-import type { TapExecResult, TapSchema } from '../../../lib/tap/contract'
+import type { TapExecResult, TapSchema } from '@packages/runner-discovery'
 import { errors } from '../../../lib/errors'
 import tap from '../../../lib/exec/tap'
 

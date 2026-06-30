@@ -6,8 +6,8 @@ import { withTapSession, throwTapError } from '../tap/tap-session'
 import type { TapSession } from '../tap/tap-session'
 import { buildTapProgram } from '../tap/build-program'
 import { renderFailure, renderKnownFailure, renderInstancesHelp, renderResult, renderGenericHelp, renderSchemaHelp } from '../tap/output'
-import { TAP_EXEC_METHOD, TAP_PROTOCOL_VERSION, TAP_SCHEMA_METHOD } from '../tap/contract'
-import type { TapExecResult, TapSchema } from '../tap/contract'
+import { TAP_EXEC_METHOD, TAP_PROTOCOL_VERSION, TAP_SCHEMA_METHOD } from '@packages/runner-discovery'
+import type { TapExecResult, TapSchema } from '@packages/runner-discovery'
 import { errors } from '../errors'
 
 const debug = Debug('cypress:cli:tap')

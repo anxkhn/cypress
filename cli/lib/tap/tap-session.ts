@@ -3,7 +3,7 @@ import CRI from 'chrome-remote-interface'
 
 import { errors } from '../errors'
 import type { ReadyRunnerState } from '../runner-discovery'
-import { TAP_BINDING_GLOBAL } from './contract'
+import { TAP_BINDING_GLOBAL } from '@packages/runner-discovery'
 
 const debug = Debug('cypress:cli:tap')
 
